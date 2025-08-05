@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./services/firebase";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import { Button, Box, Typography, Paper } from "@mui/material";
+import { Button, Box, Typography, Paper, Snackbar, Alert } from "@mui/material";
 import GoogleIcon from '@mui/icons-material/Google';
 import bgImage from "./assets/modern-business-buildings-financial-district.jpg";
 
 function App() {
   const [user, setUser] = useState<any>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState("");
+  const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +25,7 @@ function App() {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    setIsSigningIn(true);
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
@@ -38,7 +42,10 @@ function App() {
         errorMessage = "Google sign-in is not enabled. Please contact support.";
       }
       
-      alert("Error: " + errorMessage);
+      setError(errorMessage);
+      setShowError(true);
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -119,6 +126,7 @@ function App() {
             variant="contained"
             startIcon={<GoogleIcon />}
             onClick={signInWithGoogle}
+            disabled={isSigningIn}
             sx={{
               background: "linear-gradient(90deg, #2a6cff 0%, #4285F4 100%)",
               color: "#fff",
@@ -139,9 +147,30 @@ function App() {
             size="large"
             fullWidth
           >
-            Sign in with Google
+            {isSigningIn ? "Signing in..." : "Sign in with Google"}
           </Button>
         </Paper>
+
+        {/* Modern Error Message */}
+        <Snackbar
+          open={showError}
+          autoHideDuration={6000}
+          onClose={() => setShowError(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setShowError(false)}
+            severity="error"
+            variant="filled"
+            sx={{
+              width: '100%',
+              borderRadius: 2,
+              boxShadow: "0 8px 32px rgba(255,0,0,0.15)",
+            }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
       </Box>
     );
   }
