@@ -142,12 +142,17 @@ function App() {
                 background: "linear-gradient(90deg, #4285F4 0%, #2a6cff 100%)",
                 transform: "scale(1.04)",
                 boxShadow: "0 4px 24px rgba(40,120,255,0.18)",
+              },
+              "&:disabled": {
+                background: "linear-gradient(90deg, #2a6cff 0%, #4285F4 100%)",
+                color: "#fff",
+                opacity: 1,
               }
             }}
             size="large"
             fullWidth
           >
-            {isSigningIn ? "Signing in..." : "Sign in with Google"}
+            Sign in with Google
           </Button>
         </Paper>
 
