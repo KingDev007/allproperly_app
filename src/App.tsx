@@ -24,8 +24,21 @@ function App() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (e) {
-      alert("Error: " + e);
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+      let errorMessage = "Failed to sign in. Please try again.";
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Sign-in was cancelled.";
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized. Please contact support.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Google sign-in is not enabled. Please contact support.";
+      }
+      
+      alert("Error: " + errorMessage);
     }
   };
 
