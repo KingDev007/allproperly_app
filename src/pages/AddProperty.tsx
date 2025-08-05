@@ -40,6 +40,10 @@ export default function AddProperty() {
     }
     setLoading(true);
     try {
+      if (!auth.currentUser) {
+        setError("User not authenticated");
+        return;
+      }
       await addProperty({
         address,
         yearBuilt,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./services/firebase";
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import { Button, Box, Typography, Paper } from "@mui/material";
 import GoogleIcon from '@mui/icons-material/Google';
 import bgImage from "./assets/modern-business-buildings-financial-district.jpg";

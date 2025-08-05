@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Paper, Typography, Stack, TextField, Button } from "@mui/material";
-import { getPropertyById, updateProperty } from "../services/PropertyService";
+import { getPropertyById, updateProperty, type Property } from "../services/PropertyService";
 
 export default function PropertyDetail() {
   const { id } = useParams();
-  const [property, setProperty] = useState<any>(null);
+  const [property, setProperty] = useState<Property | null>(null);
   const [edit, setEdit] = useState(false);
   const [address, setAddress] = useState("");
   const [yearBuilt, setYearBuilt] = useState("");
@@ -25,6 +25,7 @@ export default function PropertyDetail() {
   }, [id]);
 
   const handleUpdate = async () => {
+    if (!property) return;
     await updateProperty(id!, { address, yearBuilt, homeType, notes });
     setEdit(false);
     setProperty({ ...property, address, yearBuilt, homeType, notes });
@@ -47,10 +48,10 @@ export default function PropertyDetail() {
           </>
         ) : (
           <>
-            <Typography variant="subtitle1">Address: {property.address}</Typography>
-            <Typography variant="body2">Year Built: {property.yearBuilt}</Typography>
-            <Typography variant="body2">Type: {property.homeType}</Typography>
-            {property.notes && <Typography variant="body2">Notes: {property.notes}</Typography>}
+            <Typography variant="subtitle1">Address: {property?.address || 'N/A'}</Typography>
+            <Typography variant="body2">Year Built: {property?.yearBuilt || 'N/A'}</Typography>
+            <Typography variant="body2">Type: {property?.homeType || 'N/A'}</Typography>
+            {property?.notes && <Typography variant="body2">Notes: {property.notes}</Typography>}
             <Button variant="outlined" onClick={() => setEdit(true)}>Edit</Button>
           </>
         )}
