@@ -1,0 +1,129 @@
+// Firestore Security Rules for AllProperly MVP
+// These rules enforce the permission system for properties and tasks
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - users can read/write their own document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Properties collection
+    match /properties/{propertyId} {
+      // Helper function to check if user has access to property
+      function hasPropertyAccess() {
+        return request.auth != null && (
+          // User is the owner
+          resource.data.ownerId == request.auth.uid ||
+          // User is in sharedWith array
+          resource.data.sharedWith.hasAny([{
+            'userId': request.auth.uid
+          }])
+        );
+      }
+      
+      function hasWriteAccess() {
+        return request.auth != null && (
+          // User is the owner
+          resource.data.ownerId == request.auth.uid ||
+          // User is a collaborator
+          resource.data.sharedWith.hasAny([{
+            'userId': request.auth.uid,
+            'role': 'collaborator'
+          }])
+        );
+      }
+      
+      // Read: Owner or shared users
+      allow read: if hasPropertyAccess();
+      
+      // Create: Authenticated users (they become owner)
+      allow create: if request.auth != null && 
+                   request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: Owner or collaborators
+      allow update: if hasWriteAccess() &&
+                   // Owner cannot be changed via update
+                   request.resource.data.ownerId == resource.data.ownerId;
+      
+      // Delete: Only owner
+      allow delete: if request.auth != null && 
+                   resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Tasks collection
+    match /tasks/{taskId} {
+      // Helper function to get property data
+      function getPropertyData() {
+        return get(/databases/$(database)/documents/properties/$(resource.data.propertyId)).data;
+      }
+      
+      function getNewPropertyData() {
+        return get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data;
+      }
+      
+      // Helper function to check if user has access to the property
+      function hasTaskPropertyAccess() {
+        let propertyData = getPropertyData();
+        return request.auth != null && (
+          // User is the property owner
+          propertyData.ownerId == request.auth.uid ||
+          // User is shared with the property
+          propertyData.sharedWith.hasAny([{
+            'userId': request.auth.uid
+          }])
+        );
+      }
+      
+      function hasTaskWriteAccess() {
+        let propertyData = getPropertyData();
+        return request.auth != null && (
+          // User is the property owner
+          propertyData.ownerId == request.auth.uid ||
+          // User is a collaborator on the property
+          propertyData.sharedWith.hasAny([{
+            'userId': request.auth.uid,
+            'role': 'collaborator'
+          }])
+        );
+      }
+      
+      function hasTaskCreateAccess() {
+        let propertyData = getNewPropertyData();
+        return request.auth != null && (
+          // User is the property owner
+          propertyData.ownerId == request.auth.uid ||
+          // User is a collaborator on the property
+          propertyData.sharedWith.hasAny([{
+            'userId': request.auth.uid,
+            'role': 'collaborator'
+          }])
+        );
+      }
+      
+      // Read: Anyone with property access
+      allow read: if hasTaskPropertyAccess();
+      
+      // Create: Property owner or collaborators
+      allow create: if hasTaskCreateAccess() &&
+                   // Validate required fields
+                   request.resource.data.keys().hasAll(['propertyId', 'title', 'dueDate', 'status']) &&
+                   request.resource.data.status == 'pending';
+      
+      // Update: Property owner or collaborators
+      allow update: if hasTaskWriteAccess() &&
+                   // Property ID cannot be changed
+                   request.resource.data.propertyId == resource.data.propertyId;
+      
+      // Delete: Property owner or collaborators
+      allow delete: if hasTaskWriteAccess();
+    }
+    
+    // Deny all other reads/writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

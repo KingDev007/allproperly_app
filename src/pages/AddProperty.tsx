@@ -1,32 +1,40 @@
+// Component: AddProperty
+// Purpose: Form for adding new properties with updated schema support
+// Props: None (page component)
+// Edge Cases:
+//   - Validates required fields before submission
+//   - Handles authentication state
+//   - Supports new property types (primary, rental, family)
+//   - TODO: Add photo upload functionality
+//   - TODO: Add property sharing during creation
+
 import { useState } from "react";
 import { Paper, Typography, Stack, TextField, Button, MenuItem, Alert, Box } from "@mui/material";
-import { addProperty } from "../services/PropertyService";
-import { auth } from "../services/firebase";
+import { useCreateProperty } from "../hooks/useProperties";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-const HOME_TYPES = [
-  "Single Family",
-  "Condo",
-  "Townhouse",
-  "Multi-Family",
-  "Mobile Home",
-  "Other",
+const PROPERTY_TYPES = [
+  { value: "primary", label: "Primary Residence" },
+  { value: "rental", label: "Rental Property" },
+  { value: "family", label: "Family Property" },
 ];
 
 export default function AddProperty() {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const createPropertyMutation = useCreateProperty();
+  
   const [address, setAddress] = useState("");
-  const [yearBuilt, setYearBuilt] = useState("");
-  const [homeType, setHomeType] = useState("");
+  const [type, setType] = useState<"primary" | "rental" | "family">("primary");
   const [notes, setNotes] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const validate = () => {
     if (!address.trim()) return "Address is required.";
-    if (!yearBuilt.match(/^\d{4}$/)) return "Year built must be a 4-digit year.";
-    if (!homeType) return "Home type is required.";
+    if (!type) return "Property type is required.";
     return "";
   };
 
@@ -38,25 +46,24 @@ export default function AddProperty() {
       setError(validationError);
       return;
     }
-    setLoading(true);
+    
+    if (!currentUser) {
+      setError("User not authenticated");
+      return;
+    }
+    
     try {
-      if (!auth.currentUser) {
-        setError("User not authenticated");
-        return;
-      }
-      await addProperty({
-        address,
-        yearBuilt,
-        homeType,
-        notes,
-        owner: auth.currentUser.uid,
+      await createPropertyMutation.mutateAsync({
+        address: address.trim(),
+        type,
+        notes: notes.trim(),
+        ownerId: currentUser.uid,
+        photoURL: photoURL.trim(),
       });
       setSuccess("Property added successfully!");
       setTimeout(() => navigate("/properties"), 1200);
     } catch (e) {
       setError("Failed to add property. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -67,44 +74,66 @@ export default function AddProperty() {
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
           {success && <Alert severity="success">{success}</Alert>}
+          
           <TextField
             label="Address"
             value={address}
             onChange={e => setAddress(e.target.value)}
             required
+            placeholder="123 Main St, City, State 12345"
           />
-          <TextField
-            label="Year Built"
-            value={yearBuilt}
-            onChange={e => setYearBuilt(e.target.value.replace(/\D/, ""))}
-            required
-            inputProps={{ maxLength: 4 }}
-          />
+          
           <TextField
             select
-            label="Home Type"
-            value={homeType}
-            onChange={e => setHomeType(e.target.value)}
+            label="Property Type"
+            value={type}
+            onChange={e => setType(e.target.value as "primary" | "rental" | "family")}
             required
           >
-            {HOME_TYPES.map(type => (
-              <MenuItem key={type} value={type}>{type}</MenuItem>
+            {PROPERTY_TYPES.map(propertyType => (
+              <MenuItem key={propertyType.value} value={propertyType.value}>
+                {propertyType.label}
+              </MenuItem>
             ))}
           </TextField>
+          
+          <TextField
+            label="Photo URL (Optional)"
+            value={photoURL}
+            onChange={e => setPhotoURL(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+            helperText="Add a URL to a photo of the property"
+          />
+          
           <TextField
             label="Notes"
             value={notes}
             onChange={e => setNotes(e.target.value)}
             multiline
             rows={3}
+            placeholder="Any additional notes about this property..."
           />
-          <Button
-            variant="contained"
-            onClick={handleAdd}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Add Property"}
-          </Button>
+          
+          <Box display="flex" gap={2}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/properties")}
+              disabled={createPropertyMutation.isPending}
+              size="large"
+              sx={{ flex: 1 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleAdd}
+              disabled={createPropertyMutation.isPending}
+              size="large"
+              sx={{ flex: 1 }}
+            >
+              {createPropertyMutation.isPending ? "Saving..." : "Add Property"}
+            </Button>
+          </Box>
         </Stack>
       </Paper>
     </Box>
