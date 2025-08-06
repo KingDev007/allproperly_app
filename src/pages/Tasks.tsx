@@ -32,10 +32,8 @@ import {
   useCompleteTask,
   useDeleteTask,
   useSkipTask,
-  useReopenTask,
-  useTaskPermissions
+  useReopenTask
 } from "../hooks/useTasks";
-import { useAuth } from "../contexts/AuthContext";
 import type { Task } from "../types";
 import type { TaskInput } from "../services/TaskService";
 import TaskCard from "../components/TaskCard";
@@ -61,8 +59,6 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function Tasks() {
-  const { currentUser } = useAuth();
-  
   // React Query hooks - much faster than manual state management
   const { data: properties = [], isLoading: propertiesLoading } = useUserProperties();
   const propertyIds = useMemo(() => properties.map(p => p.id), [properties]);

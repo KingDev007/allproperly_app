@@ -14,8 +14,7 @@ import {
   getTaskById,
   getUserTaskPermissions,
   getTasksSummary,
-  type TaskInput,
-  type TaskPermissions
+  type TaskInput
 } from '../services/TaskService';
 import type { Task } from '../types';
 
@@ -152,7 +151,7 @@ export function useCompleteTask() {
       
       return { previousTask };
     },
-    onError: (err, { taskId }, context) => {
+    onError: (_, { taskId }, context) => {
       // Rollback on error
       if (context?.previousTask) {
         queryClient.setQueryData(taskKeys.task(taskId), context.previousTask);
