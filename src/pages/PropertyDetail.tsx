@@ -17,7 +17,7 @@ import {
   Chip
 } from "@mui/material";
 import { Add, Task as TaskIcon } from "@mui/icons-material";
-import { getPropertyById, updateProperty } from "../services/PropertyService";
+import { getPropertyById, updateProperty, getUserPropertyPermissions } from "../services/PropertyService";
 import { 
   getTasksByProperty, 
   addTask, 
@@ -32,6 +32,7 @@ import {
 } from "../services/TaskService";
 import type { Property, Task } from "../types";
 import type { TaskInput, TaskPermissions } from "../services/TaskService";
+import type { PropertyPermissions } from "../services/PropertyService";
 import { useAuth } from "../contexts/AuthContext";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
@@ -67,6 +68,13 @@ export default function PropertyDetail() {
     canDelete: false,
     role: 'none'
   });
+  const [propertyPermissions, setPropertyPermissions] = useState<PropertyPermissions>({
+    canView: false,
+    canEdit: false,
+    canDelete: false,
+    canShare: false,
+    role: 'none'
+  });
   
   // Property editing states
   const [edit, setEdit] = useState(false);
@@ -97,12 +105,14 @@ export default function PropertyDetail() {
         setPropertyType(prop.type || 'primary');
         setNotes(prop.notes || "");
         
-        // Load user permissions for tasks on this property first
-        const permissions = await getUserTaskPermissions(currentUser.uid, id);
-        setTaskPermissions(permissions);
+        // Load user permissions for both tasks and property
+        const taskPerms = await getUserTaskPermissions(currentUser.uid, id);
+        const propPerms = await getUserPropertyPermissions(currentUser.uid, id);
+        setTaskPermissions(taskPerms);
+        setPropertyPermissions(propPerms);
         
         // Only load tasks if user has permission to view them
-        if (permissions.canView) {
+        if (taskPerms.canView) {
           try {
             const propertyTasks = await getTasksByProperty(id, currentUser.uid);
             setTasks(propertyTasks);
@@ -125,12 +135,14 @@ export default function PropertyDetail() {
     if (!property || !currentUser) return;
     
     try {
-      await updateProperty(id!, { address, type: propertyType, notes });
+      console.log('Updating property:', { id: id!, address, type: propertyType, notes, userId: currentUser.uid });
+      await updateProperty(id!, { address, type: propertyType, notes }, currentUser.uid);
       setEdit(false);
       setProperty({ ...property, address, type: propertyType, notes });
+      console.log('Property updated successfully');
     } catch (error) {
       console.error("Error updating property:", error);
-      setError("Failed to update property");
+      setError("Failed to update property: " + (error as Error).message);
     }
   };
 
@@ -331,9 +343,15 @@ export default function PropertyDetail() {
                   <strong>Notes:</strong> {property.notes}
                 </Typography>
               )}
-              <Button variant="outlined" onClick={() => setEdit(true)}>
-                Edit Property
-              </Button>
+              {/* Debug info */}
+              <Typography variant="caption" color="text.secondary">
+                Debug: canEdit={propertyPermissions.canEdit.toString()}, role={propertyPermissions.role}
+              </Typography>
+              {propertyPermissions.canEdit && (
+                <Button variant="outlined" onClick={() => setEdit(true)}>
+                  Edit Property
+                </Button>
+              )}
             </>
           )}
         </Stack>

@@ -61,7 +61,7 @@ export function useUpdateProperty() {
 
   return useMutation({
     mutationFn: ({ propertyId, propertyData }: { propertyId: string; propertyData: Partial<PropertyInput> }) =>
-      updateProperty(propertyId, propertyData),
+      updateProperty(propertyId, propertyData, currentUser!.uid),
     onSuccess: (_, { propertyId }) => {
       // Invalidate the specific property and user properties
       queryClient.invalidateQueries({ queryKey: propertyKeys.property(propertyId) });
@@ -75,7 +75,7 @@ export function useDeleteProperty() {
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: (propertyId: string) => deleteProperty(propertyId),
+    mutationFn: (propertyId: string) => deleteProperty(propertyId, currentUser!.uid),
     onSuccess: (_, propertyId) => {
       // Remove from cache and invalidate user properties
       queryClient.removeQueries({ queryKey: propertyKeys.property(propertyId) });

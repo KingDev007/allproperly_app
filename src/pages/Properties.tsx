@@ -40,6 +40,10 @@ export default function Properties() {
     loadPropertyLabels();
   }, [properties, currentUser]);
 
+  const handleEdit = (propertyId: string) => {
+    navigate(`/properties/${propertyId}`);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this property?")) return;
     
@@ -110,7 +114,7 @@ export default function Properties() {
                     userLabel={propertyLabels[prop.id]} 
                   />
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <IconButton color="primary" onClick={() => navigate(`/property/${prop.id}`)}><EditIcon /></IconButton>
+                    <IconButton color="primary" onClick={() => handleEdit(prop.id)}><EditIcon /></IconButton>
                     <IconButton color="error" onClick={() => handleDelete(prop.id)}><DeleteIcon /></IconButton>
                   </Stack>
                 </Paper>
